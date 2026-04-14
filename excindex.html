@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>EXCALIBUR v1.02b - FINAL DEBUG</title>
+    <style>
+        body { background: #000; color: #0f0; font-family: monospace; padding: 20px; }
+        .glitch { border: 1px solid #0f0; padding: 15px; }
+        .label { color: #555; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+
+<div id="hud-container" class="glitch">
+    <div class="label">Archive Connection</div>
+    <div id="system-status">WAITING FOR SCRIPT...</div>
+
+    <hr>
+
+    <div class="label">Node ID Assigned</div>
+    <h2 id="player-role">PENDING</h2>
+    <p id="player-bio">Handshake initializing...</p>
+
+    <div class="label">Active Motives</div>
+    <ul id="motive-list">
+        <li>Syncing...</li>
+    </ul>
+</div>
+
+<script>
+    // This script runs immediately after the HTML above is loaded
+    function forceUpdate() {
+        try {
+            const testData = {
+                "role": "NODE_MARSHALL",
+                "bio": "THE SIGNAL IS REACHING THE HTML. IF YOU SEE THIS, THE ENGINE IS WORKING.",
+                "motives": ["Handshake Established.", "The Ghost is defeated."]
+            };
+
+            // Targeted Updates
+            document.getElementById('system-status').innerText = "SIGNAL_STABLE // OVR_ACTIVE";
+            document.getElementById('player-role').innerText = testData.role;
+            document.getElementById('player-bio').innerText = testData.bio;
+
+            let mList = "";
+            testData.motives.forEach(m => { mList += "<li>" + m + "</li>"; });
+            document.getElementById('motive-list').innerHTML = mList;
+
+        } catch (err) {
+            // If this shows up, the IDs above are spelled wrong
+            document.getElementById('system-status').innerText = "SCRIPT EXECUTION ERROR";
+        }
+    }
+
+    // Fire the update immediately
+    forceUpdate();
+</script>
+
+</body>
+</html>
+
