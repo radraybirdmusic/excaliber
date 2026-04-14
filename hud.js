@@ -5,7 +5,7 @@ const myNodeID = "01"; // Example: This player is The Hammer. Change per device.
 async function updateHUD() {
     try {
         // Fetch from the API, not the raw JSON, to ensure fresh data
-        const response = await fetch('excalibur_api.php');
+        const response = await fetch('manifest.json');
         const data = await response.json();
         
         const currentRound = data.current_live_round;
