@@ -1,49 +1,77 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"><title>EXCALIBUR v1.03b DEBUG</title>
-    <style>body{background:#000;color:#0f0;font-family:monospace;padding:20px;}</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EXCALIBUR // HUD v1.03c</title>
+    <style>
+        body { background-color: #050505; color: #00ff41; font-family: 'Courier New', Courier, monospace; margin: 0; padding: 20px; line-height: 1.4; }
+        #hud-container { max-width: 600px; margin: 0 auto; border: 1px solid #00ff41; padding: 20px; box-shadow: 0 0 20px rgba(0, 255, 65, 0.1); }
+        .header { border-bottom: 2px solid #00ff41; padding-bottom: 10px; margin-bottom: 20px; text-align: center; }
+        .label { color: #555; font-size: 0.75em; text-transform: uppercase; letter-spacing: 2px; }
+        #system-status { font-weight: bold; font-size: 0.9em; }
+        h2 { margin: 10px 0; text-transform: uppercase; letter-spacing: 3px; }
+        .motive-box { background: rgba(0, 255, 65, 0.05); padding: 15px; border-left: 3px solid #00ff41; margin: 20px 0; }
+        #quest-ledger { display: none; margin-top: 30px; border: 1px double #ff0000; padding: 15px; background: rgba(255, 0, 0, 0.05); color: #ff4444; }
+        .glitch-animate { animation: pulse-red 1.5s infinite; }
+        @keyframes pulse-red { 0%, 100% { border-color: #ff0000; } 50% { border-color: #550000; } }
+    </style>
 </head>
 <body>
-    <div id="debug-info" style="color:#555;font-size:10px;">DETECTOR: <span id="id-check">..</span></div>
-    <h2 id="player-role">LOADING...</h2>
-    <div id="system-status">INIT...</div>
-    <p id="player-bio"></p>
-    <ul id="motive-list"></ul>
+<div id="hud-container">
+    <div class="header">
+        <div class="label" id="node-display">NODE_SYNC_INITIALIZING...</div>
+        <div id="system-status">CONNECTING TO ARCHIVE...</div>
+    </div>
+    <div class="identity-section">
+        <div class="label">Identity Assigned</div>
+        <h2 id="player-role">--</h2>
+        <p id="player-bio">Handshake in progress...</p>
+    </div>
+    <div class="motive-box">
+        <div class="label">Active Motives</div>
+        <ul id="motive-list"><li>...</li></ul>
+    </div>
+    <div id="quest-ledger">
+        <div class="label" style="color: #ff4444;">!! RESTORED CHRONICLE DETECTED !!</div>
+        <div id="quest-list"></div>
+    </div>
+</div>
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const myNodeID = params.get('node') || "01";
+    
+    async function updateHUD() {
+        try {
+            const res = await fetch(`./manifest.json?t=${new Date().getTime()}`);
+            const data = await res.json();
+            const round = data.current_live_round;
+            const nodeName = data.assignments[myNodeID][0];
+            const schedule = data.round_schedule[round][nodeName];
 
-    <script>
-        // THE URL SCANNER
-        const params = new URLSearchParams(window.location.search);
-        const myNodeID = params.get('node') || "01";
-        
-        // VISUAL CHECK
-        document.getElementById('id-check').innerText = "URL_ID_IS_" + myNodeID;
+            document.getElementById('node-display').innerText = `EXCALIBUR ARCHIVE // NODE_${myNodeID}`;
+            document.getElementById('player-role').innerText = nodeName.replace('NODE_', '');
+            document.getElementById('player-bio').innerText = data.library[nodeName].bio;
+            document.getElementById('system-status').innerText = `${data.system_status} // RD_${round}`;
 
-        async function updateHUD() {
-            try {
-                // CACHE BUSTER
-                const t = new Date().getTime();
-                const res = await fetch(`./manifest.json?t=${t}`);
-                const data = await res.json();
-                
-                const nodeName = data.assignments[myNodeID][0];
-                const round = data.current_live_round;
-                const schedule = data.round_schedule[round][nodeName];
+            let mHTML = "";
+            schedule.motives.forEach(m => { mHTML += "<li>" + m + "</li>"; });
+            document.getElementById('motive-list').innerHTML = mHTML;
 
-                document.getElementById('player-role').innerText = nodeName;
-                document.getElementById('player-bio').innerText = data.library[nodeName].bio;
-                document.getElementById('system-status').innerText = data.system_status + " // NODE_" + myNodeID;
-
-                let mHTML = "";
-                schedule.motives.forEach(m => { mHTML += "<li>" + m + "</li>"; });
-                document.getElementById('motive-list').innerHTML = mHTML;
-
-            } catch (e) {
-                document.getElementById('system-status').innerText = "SYNC ERROR";
-            }
-        }
-        updateHUD();
-        setInterval(updateHUD, 10000);
-    </script>
+            const ledger = document.getElementById('quest-ledger');
+            if (data.ledger_visibility === "VISIBLE") {
+                ledger.style.display = "block";
+                ledger.classList.add('glitch-animate');
+                let qHTML = "<ul>";
+                for (let n in data.round_schedule[round]) {
+                    qHTML += `<li><strong>${n.replace('NODE_', '')}:</strong> ${data.round_schedule[round][n].motives[0]}</li>`;
+                }
+                document.getElementById('quest-list').innerHTML = qHTML + "</ul>";
+            } else { ledger.style.display = "none"; }
+        } catch (e) { document.getElementById('system-status').innerText = "CONNECTION LOST..."; }
+    }
+    updateHUD();
+    setInterval(updateHUD, 10000);
+</script>
 </body>
 </html>
