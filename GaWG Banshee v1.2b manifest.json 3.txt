@@ -1,0 +1,61 @@
+{
+  "current_live_round": 1,
+  "system_status": "STABLE // RIPPLE_ACTIVE",
+  "ledger_visibility": "HIDDEN",
+  "assignments": {
+    "01": ["NODE_MARSHALL"],
+    "02": ["NODE_SEER"],
+    "03": ["NODE_CAPT_MARSH"],
+    "04": ["NODE_HAMMER"],
+    "05": ["NODE_FARRIER"],
+    "06": ["NODE_ECHO"],
+    "07": ["NODE_SURGEON"],
+    "08": ["NODE_LIBRARIAN"],
+    "09": ["NODE_SURVEYOR"],
+    "10": ["NODE_GAMBLER"],
+    "11": ["NODE_TELEGRAPHIST"],
+    "12": ["NODE_OUTLAW"],
+    "13": ["NODE_DRIFTER"],
+    "14": ["NODE_PROPRIETOR"],
+    "15": ["NODE_RESIDENT"]
+  },
+  "library": {
+    "NODE_MARSHALL": {
+      "bio": "The Marshall. Order in a world of static. Seeking the physical killer."
+    },
+    "NODE_SEER": {
+      "bio": "The Seer. Vessel for the 16Hz ripple. Interpreting omens of the glitch."
+    },
+    "NODE_CAPT_MARSH": {
+      "bio": "Captain Obed Marsh. Salt-worn and timeline-displaced. Holder of the old maps."
+    },
+    "NODE_HAMMER": {
+      "bio": "The Hammer. Specialist in structural integrity and mechanical restoration. Forged in the heat of a breaking reality."
+    },
+    "NODE_PROPRIETOR": {
+      "bio": "The Proprietor. Resource custodian and keeper of the central hub."
+    },
+    "NODE_RESIDENT": {
+      "bio": "The Resident. Guardian of the Restored Chronicle. The final node."
+    }
+  },
+  "round_schedule": {
+    "1": {
+      "NODE_MARSHALL": {
+        "motives": ["Identify the first anomaly at the Gulch."],
+        "suspicions": ["The Drifter's timeline doesn't match the ledger."],
+        "clues": ["Broken Badge", "Flickering Pocket Watch"]
+      },
+      "NODE_SEER": {
+        "motives": ["Find the harmony in the static."],
+        "suspicions": ["The Prophet is hiding a digital resonance."],
+        "clues": ["Static-filled Crystal Ball"]
+      },
+      "NODE_HAMMER": {
+        "motives": ["Maintain the physical seals of the town.", "Analyze the structural 'jitter' in the mines."],
+        "suspicions": ["The Surveyor's tools are measuring depth that shouldn't exist."],
+        "clues": ["Resonant Tuning Fork", "Oil-stained Blueprint"]
+      }
+    }
+  }
+}
