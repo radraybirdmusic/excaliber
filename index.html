@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EXCALIBUR // HUD v1.22</title>
+    <title>EXCALIBUR // HUD v1.23</title>
     <style>
         :root { --neon-green: #00ff41; --dark-green: #003b00; --warning-amber: #ffb000; --terminal-black: #050505; }
-        body { background: var(--terminal-black); color: var(--neon-green); font-family: 'Courier New', monospace; padding: 15px; line-height: 1.4; }
+        body { background: var(--terminal-black); color: var(--neon-green); font-family: 'Courier New', monospace; padding: 15px; }
         #hud-container { max-width: 650px; margin: 0 auto; border: 2px solid var(--neon-green); padding: 15px; }
         .label { color: var(--warning-amber); font-size: 0.85em; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
         .data-section { border: 1px solid var(--dark-green); padding: 12px; margin-bottom: 15px; background: rgba(0, 59, 0, 0.1); }
@@ -15,32 +15,31 @@
         .node-btn.selected { background: var(--neon-green); color: black; font-weight: bold; }
         textarea { width: 100%; background: #111; color: #fff; border: 1px solid var(--dark-green); padding: 10px; font-family: monospace; resize: none; box-sizing: border-box; }
         .action-btn { width: 100%; background: var(--neon-green); color: black; border: none; padding: 12px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 10px; }
-        
-        /* Persistent Scroll Area */
-        #inbox-list { list-style: none; padding: 0; font-size: 0.85em; color: #fff; max-height: 300px; overflow-y: auto; border: 1px solid #222; padding: 5px; }
+        .action-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+        #inbox-list { list-style: none; padding: 0; font-size: 0.85em; color: #fff; max-height: 300px; overflow-y: auto; }
         #inbox-list li { border-bottom: 1px solid var(--dark-green); padding: 8px 0; }
-        .msg-sent { color: #888; font-style: italic; } /* Styles for messages YOU sent */
-        .msg-received { border-left: 2px solid var(--warning-amber); padding-left: 8px !important; }
+        .msg-sent { color: #888; font-style: italic; }
+        .status-pulse { font-size: 0.7em; float: right; }
     </style>
 </head>
 <body>
 
 <div id="hud-container">
     <div class="data-section">
-        <div class="label">Nodal Identity // <span id="player-role">--</span></div>
-        <div id="system-status">SYNCING_HISTORY...</div>
+        <div class="label">Nodal Identity // <span id="player-role">--</span> <span id="sync-indicator" class="status-pulse"></span></div>
+        <div id="system-status">INITIALIZING...</div>
     </div>
 
     <div class="data-section" style="border-color: var(--warning-amber);">
         <div class="label" style="color: var(--warning-amber);">Nodal Archive // Back-Scroll</div>
-        <ul id="inbox-list"><li>Connecting to ripple...</li></ul>
+        <ul id="inbox-list"><li>Pulsing for signals...</li></ul>
     </div>
 
     <div class="data-section">
         <div class="label">Performance Relay // Outbound</div>
         <div class="node-selector" id="target-grid"></div>
         <textarea id="msg-input" rows="2" placeholder="Input cue..."></textarea>
-        <button class="action-btn" onclick="shootToBin()">[ EXECUTE SHOT ]</button>
+        <button class="action-btn" id="send-btn" onclick="shootToBin()">[ EXECUTE SHOT ]</button>
     </div>
 </div>
 
@@ -51,7 +50,7 @@
     const myNodeID = params.get('node') || "01";
     let selectedNodes = [];
 
-    // Init Grid
+    // Target Grid
     const grid = document.getElementById('target-grid');
     for (let i = 1; i <= 15; i++) {
         let id = i.toString().padStart(2, '0');
@@ -67,14 +66,14 @@
     }
 
     async function updateHUD() {
+        document.getElementById('sync-indicator').innerText = "○";
         try {
-            // Identify Node
-            const resMan = await fetch(`./manifest.json?t=${new Date().getTime()}`);
+            const resMan = await fetch(`./manifest.json?nocache=${Date.now()}`);
             const manData = await resMan.json();
             document.getElementById('player-role').innerText = manData.assignments[myNodeID][0];
 
-            // Pull Persistent Bin History
-            const resBin = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+            // Use nocache to force JSONbin to give us the latest, not the memory version
+            const resBin = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?nocache=${Date.now()}`, {
                 headers: { "X-Master-Key": API_KEY }
             });
             const data = await resBin.json();
@@ -83,62 +82,67 @@
             const inbox = document.getElementById('inbox-list');
             let historyHTML = "";
 
-            // Newest at the top
             [...messages].reverse().forEach(pkg => {
                 const targets = pkg.to.split(',');
-                
-                // IF it was sent TO me
                 if (targets.includes(myNodeID)) {
-                    historyHTML += `<li class="msg-received"><span style="color:var(--warning-amber)">[FROM_${pkg.from}]</span> ${pkg.msg}</li>`;
-                }
-                // IF it was sent BY me (The Sent Box)
-                else if (pkg.from === myNodeID) {
+                    historyHTML += `<li><span style="color:var(--warning-amber)">[FROM_${pkg.from}]</span> ${pkg.msg}</li>`;
+                } else if (pkg.from === myNodeID) {
                     historyHTML += `<li class="msg-sent"><span style="color:#0088ff">[SENT_TO_${pkg.to}]</span> ${pkg.msg}</li>`;
                 }
             });
 
             inbox.innerHTML = historyHTML || "<li>Archive empty.</li>";
-            document.getElementById('system-status').innerText = "ARCHIVE_SYNCED";
-        } catch (e) { document.getElementById('system-status').innerText = "SYNC_ERROR"; }
+            document.getElementById('system-status').innerText = "RIPPLE_SYNC_OK";
+            document.getElementById('sync-indicator').innerText = "●";
+        } catch (e) { 
+            document.getElementById('system-status').innerText = "SYNC_RETRYING..."; 
+        }
     }
 
     async function shootToBin() {
         const msg = document.getElementById('msg-input').value;
+        const btn = document.getElementById('send-btn');
         if (selectedNodes.length === 0 || !msg) return;
 
+        btn.disabled = true;
+        btn.innerText = "[ UPLOADING... ]";
+
         try {
-            const resGet = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+            // GET
+            const resGet = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?nocache=${Date.now()}`, {
                 headers: { "X-Master-Key": API_KEY }
             });
             const currentData = await resGet.json();
             let msgList = currentData.record.messages || [];
 
-            msgList.push({
-                from: myNodeID,
-                to: selectedNodes.join(','),
-                msg: msg,
-                time: new Date().toLocaleTimeString()
-            });
+            msgList.push({ from: myNodeID, to: selectedNodes.join(','), msg: msg });
+            if (msgList.length > 50) msgList = msgList.slice(-50); // Keep it light
 
-            // Keep only the last 100 for performance
-            if (msgList.length > 100) msgList = msgList.slice(-100);
-
-            await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+            // PUT
+            const resPut = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
                 method: 'PUT',
                 headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY },
                 body: JSON.stringify({ messages: msgList })
             });
 
-            document.getElementById('msg-input').value = "";
-            selectedNodes = [];
-            document.querySelectorAll('.node-btn').forEach(b => b.classList.remove('selected'));
-            updateHUD();
-        } catch (e) { alert("SHOT_FAILED"); }
+            if(resPut.ok) {
+                document.getElementById('msg-input').value = "";
+                selectedNodes = [];
+                document.querySelectorAll('.node-btn').forEach(b => b.classList.remove('selected'));
+                await updateHUD();
+            } else {
+                throw new Error("Server rejected shot.");
+            }
+        } catch (e) {
+            alert("RIPPLE INTERFERENCE. System will auto-retry on next pulse.");
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "[ EXECUTE SHOT ]";
+        }
     }
 
-    // Run immediately on load, then every 10 seconds
     updateHUD();
-    setInterval(updateHUD, 10000);
+    setInterval(updateHUD, 15000); // Increased to 15s to respect free-tier rate limits
 </script>
 </body>
 </html>
