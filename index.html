@@ -1,171 +1,136 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EXCALIBUR // HUD v1.28</title>
     <style>
-        :root { --neon-green: #00ff41; --dark-green: #003b00; --warning-amber: #ffb000; --terminal-black: #050505; }
-        * { box-sizing: border-box; }
-        body { background: var(--terminal-black); color: var(--neon-green); font-family: 'Courier New', monospace; margin: 0; padding: 10px; overflow-x: hidden; }
-        
-        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--dark-green); padding-bottom: 5px; margin-bottom: 10px; }
-        .node-id { font-size: 0.8em; color: #fff; }
-        .round-badge { border: 1px solid var(--neon-green); padding: 2px 10px; background: var(--dark-green); font-weight: bold; }
-
-        /* IMAGE PORT: Placeholder for your future assets */
-        .portrait-frame { width: 100%; height: 120px; border: 1px solid var(--dark-green); margin-bottom: 10px; display: flex; align-items: center; justify-content: center; background: #000; overflow: hidden; }
-        #char-portrait { max-width: 100%; max-height: 100%; opacity: 0.7; }
-
-        /* OBJECTIVES PANEL */
-        .objective-panel { border: 1px solid var(--warning-amber); padding: 10px; margin-bottom: 10px; background: rgba(255, 176, 0, 0.05); }
-        .label { color: var(--warning-amber); font-size: 0.7em; font-weight: bold; text-transform: uppercase; margin-bottom: 3px; display: block; }
-        #objective-list { list-style: square; padding-left: 18px; margin: 5px 0; font-size: 0.85em; color: #fff; }
-
-        /* MESSAGING AREA */
-        .message-area { border: 1px solid var(--dark-green); padding: 8px; height: 140px; overflow-y: auto; margin-bottom: 8px; font-size: 0.8em; }
-        #inbox-list { list-style: none; padding: 0; margin: 0; }
-        #inbox-list li { border-bottom: 1px solid #111; padding: 5px 0; }
-
-        /* GRID & CONTROLS */
-        .node-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; margin-bottom: 5px; }
-        .node-btn { aspect-ratio: 1/1; border: 1px solid var(--neon-green); background: transparent; color: var(--neon-green); font-size: 0.6em; }
-        .node-btn.selected { background: var(--neon-green); color: black; font-weight: bold; }
-        textarea { width: 100%; background: #111; color: #fff; border: 1px solid var(--dark-green); padding: 8px; font-size: 16px; margin-bottom: 5px; font-family: monospace; }
-        .action-btn { width: 100%; background: var(--neon-green); color: black; border: none; padding: 12px; font-weight: bold; text-transform: uppercase; }
-
-        /* THE LOG (Pop-up) */
-        .log-trigger { background: #222; color: var(--warning-amber); border: 1px solid var(--warning-amber); padding: 6px; font-size: 0.8em; width: 100%; margin-top: 10px; cursor: pointer; }
-        #log-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 2000; padding: 20px; border: 2px solid var(--neon-green); overflow-y: auto; }
-        .close-btn { color: #f44; border: 1px solid #f44; padding: 10px; text-align: center; margin-top: 20px; font-weight: bold; }
+        body { margin: 0; padding: 0; overflow: hidden; background-color: #050505; }
+        canvas { display: block; }
     </style>
 </head>
 <body>
-
-<header>
-    <div class="node-id">SYSTEM: <span id="node-label">--</span></div>
-    <div class="round-badge">RD: <span id="rd-num">--</span></div>
-</header>
-
-<div class="portrait-frame">
-    <img id="char-portrait" src="" alt="[ IDENTITY_PORT_PENDING ]">
-</div>
-
-<div class="objective-panel">
-    <span class="label">Primary Objectives</span>
-    <ul id="objective-list"><li>Pulsing for mission data...</li></ul>
-</div>
-
-<span class="label">The Ripple // Decrypted Relays</span>
-<div class="message-area">
-    <ul id="inbox-list"></ul>
-</div>
-
-<div class="node-grid" id="grid"></div>
-<textarea id="msg-input" rows="2" placeholder="Input performance cue..."></textarea>
-<button class="action-btn" onclick="shoot()">[ EXECUTE SHOT ]</button>
-
-<button class="log-trigger" onclick="toggleLog()">[ OPEN CHARACTER LOG ]</button>
-
-<div id="log-overlay">
-    <h2>CHARACTER ARCHIVE</h2>
-    <hr style="border:1px solid var(--dark-green)">
-    <div style="margin-top:20px;">
-        <span class="label">Identity Profile</span>
-        <p id="bio-display" style="color:#fff; font-size:0.9em;"></p>
-    </div>
-    <div style="margin-top:20px;">
-        <span class="label">NPC Intelligence Cache</span>
-        <p id="mail-display" style="color:var(--warning-amber); font-style:italic; font-size:0.9em;"></p>
-    </div>
-    <div class="close-btn" onclick="toggleLog()">[ RETURN TO HUD ]</div>
-</div>
-
 <script>
-    const BIN_ID = "69df3b3e856a682189369836";
-    const API_KEY = "$2a$10$Py08gG/gZ3q3jcSUOXcVruxQ8/PsjObMgTZg7oEJdGkL7ZTh5rFPq";
-    const params = new URLSearchParams(window.location.search);
-    const myNodeID = params.get('node') || "01";
-    let selectedNodes = [];
+let nodes = [];
+let currentNodeID = 1; 
+let totalNodes = 15;
+let currentScreen = "MAIN_HUD"; 
 
-    // Grid Init
-    const g = document.getElementById('grid');
-    for (let i = 1; i <= 15; i++) {
-        let id = i.toString().padStart(2, '0');
-        if (id === myNodeID) continue;
-        let b = document.createElement('button');
-        b.className = 'node-btn'; b.id = `btn-${id}`; b.innerText = id;
-        b.onclick = () => {
-            if (selectedNodes.includes(id)) {
-                selectedNodes = selectedNodes.filter(n => n !== id);
-                b.classList.remove('selected');
-            } else {
-                selectedNodes.push(id);
-                b.classList.add('selected');
-            }
-        };
-        g.appendChild(b);
+function preload() {
+  // Loading directly from ROOT (no folder prefix)
+  for (let i = 1; i <= totalNodes; i++) {
+    let nodeNum = nf(i, 2); // Handles the 01, 02, etc. format
+    // Removed 'assets/' prefix
+    nodes[i] = loadImage('node_' + nodeNum + '.png');
+  }
+}
+
+function setup() {
+  createCanvas(windowWidth, windowHeight);
+  textFont('monospace');
+}
+
+function draw() {
+  background(5, 10, 15);
+  
+  if (currentScreen === "MAIN_HUD") {
+    drawMainHUD();
+  } else if (currentScreen === "BIO_DETAIL") {
+    drawBioDetail();
+  } else if (currentScreen === "RECIPE_VAULT") {
+    drawRecipeVault();
+  }
+}
+
+function drawMainHUD() {
+  // HUD Frame
+  stroke(0, 255, 255, 120);
+  strokeWeight(2);
+  noFill();
+  rect(10, 10, width-20, height-20);
+  
+  // Character Sprite (Centered Top-ish)
+  if (nodes[currentNodeID]) {
+    imageMode(CENTER);
+    // Scales to 50% of screen width to stay visible on mobile
+    let imgSize = width * 0.5;
+    image(nodes[currentNodeID], width * 0.5, height * 0.35, imgSize, imgSize);
+  }
+  
+  // Text Overlay
+  fill(0, 255, 255);
+  noStroke();
+  textSize(18);
+  textAlign(LEFT);
+  text("NODE: " + nf(currentNodeID, 2), 30, 50);
+  
+  // Interactive Labels
+  textAlign(CENTER);
+  textSize(14);
+  
+  // Bio Button Zone (Right Side)
+  fill(0, 255, 255, 40);
+  rect(width * 0.55, height * 0.6, width * 0.35, 60, 5);
+  fill(0, 255, 255);
+  text("VIEW BIO", width * 0.72, height * 0.64);
+
+  // Vault Button Zone (Left Side)
+  fill(0, 255, 255, 40);
+  rect(width * 0.1, height * 0.6, width * 0.35, 60, 5);
+  fill(0, 255, 255);
+  text("CRi1 VAULT", width * 0.27, height * 0.64);
+
+  // Navigation Hint
+  textSize(12);
+  fill(0, 255, 255, 150);
+  text("< TAP EDGES TO CYCLE 01-15 >", width/2, height - 40);
+}
+
+function drawBioDetail() {
+  background(10, 20, 40);
+  fill(0, 255, 255);
+  textAlign(CENTER);
+  text("NODE " + currentNodeID + " : BIO DATA", width/2, height/2);
+  text("STABILIZING RIPPLE...", width/2, height/2 + 30);
+  textSize(12);
+  text("TAP TO RETURN", width/2, height - 60);
+}
+
+function drawRecipeVault() {
+  background(20, 40, 20);
+  fill(100, 255, 100);
+  textAlign(CENTER);
+  text("CRi1 RECIPE VAULT", width/2, height/2);
+  text("ACCESSING DIRT-BOX LOGS...", width/2, height/2 + 30);
+  textSize(12);
+  text("TAP TO RETURN", width/2, height - 60);
+}
+
+function touchStarted() {
+  if (currentScreen === "MAIN_HUD") {
+    // Navigating via tap zones
+    if (mouseY > height * 0.6 && mouseY < height * 0.75) {
+      if (mouseX > width * 0.5) {
+        currentScreen = "BIO_DETAIL";
+      } else {
+        currentScreen = "RECIPE_VAULT";
+      }
+    } 
+    // Cycling nodes via side taps
+    else if (mouseX < width * 0.3) {
+      currentNodeID = (currentNodeID === 1) ? 15 : currentNodeID - 1;
+    } 
+    else if (mouseX > width * 0.7) {
+      currentNodeID = (currentNodeID === 15) ? 1 : currentNodeID + 1;
     }
+  } else {
+    currentScreen = "MAIN_HUD";
+  }
+  return false;
+}
 
-    function toggleLog() {
-        const log = document.getElementById('log-overlay');
-        log.style.display = log.style.display === 'block' ? 'none' : 'block';
-    }
-
-    async function sync() {
-        try {
-            const resBin = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?nocache=${Date.now()}`, { headers: { "X-Master-Key": API_KEY } });
-            const binData = await resBin.json();
-            const rd = binData.record.config?.round || 1;
-            document.getElementById('rd-num').innerText = rd;
-
-            const resMan = await fetch(`./manifest.json?t=${Date.now()}`);
-            const manData = await resMan.json();
-            const myInfo = manData.assignments[myNodeID][0];
-            const roundData = manData.round_schedule[rd][myInfo]["scenario_A"];
-
-            // Identity & Future Image Mapping
-            document.getElementById('node-label').innerText = myInfo.replace('NODE_', '');
-            document.getElementById('bio-display').innerText = manData.library[myInfo].bio;
-            document.getElementById('mail-display').innerText = roundData.mail;
-            
-            // Looking for image matching node ID: e.g. "node_01.png"
-            document.getElementById('char-portrait').src = `assets/node_${myNodeID}.png`;
-
-            let objHtml = "";
-            roundData.motives.forEach(m => objHtml += `<li>${m}</li>`);
-            document.getElementById('objective-list').innerHTML = objHtml;
-
-            let inHtml = "";
-            [...binData.record.messages].reverse().forEach(p => {
-                if (p.to.split(',').includes(myNodeID)) inHtml += `<li><span style="color:var(--warning-amber)">[F_${p.from}]</span> ${p.msg}</li>`;
-                else if (p.from === myNodeID) inHtml += `<li style="color:#666">[S_${p.to}] ${p.msg}</li>`;
-            });
-            document.getElementById('inbox-list').innerHTML = inHtml || "<li>Signal Dead.</li>";
-        } catch(e) {}
-    }
-
-    async function shoot() {
-        const msg = document.getElementById('msg-input').value;
-        if (!selectedNodes.length || !msg) return;
-        try {
-            const resGet = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, { headers: { "X-Master-Key": API_KEY } });
-            const d = await resGet.json();
-            let ml = d.record.messages || [];
-            ml.push({ from: myNodeID, to: selectedNodes.join(','), msg: msg });
-            await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-                method: 'PUT', headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY },
-                body: JSON.stringify({ ...d.record, messages: ml.slice(-40) })
-            });
-            document.getElementById('msg-input').value = "";
-            selectedNodes = [];
-            document.querySelectorAll('.node-btn').forEach(b => b.classList.remove('selected'));
-            sync();
-        } catch(e) { alert("SHOT_FAILED"); }
-    }
-
-    setInterval(sync, 15000);
-    sync();
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+}
 </script>
 </body>
 </html>
