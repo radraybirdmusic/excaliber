@@ -3,82 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EXCALIBUR // HUD v1.12</title>
+    <title>EXCALIBUR // HUD v1.14</title>
     <style>
-        :root { --neon-green: #00ff41; --dark-green: #003b00; --warning-amber: #ffb000; --terminal-black: #050505; --heat-red: #ff4444; }
-        body { background: var(--terminal-black); color: var(--neon-green); font-family: 'Courier New', monospace; padding: 15px; line-height: 1.4; }
+        :root { --neon-green: #00ff41; --dark-green: #003b00; --warning-amber: #ffb000; --terminal-black: #050505; }
+        body { background: var(--terminal-black); color: var(--neon-green); font-family: 'Courier New', monospace; padding: 15px; }
         #hud-container { max-width: 650px; margin: 0 auto; border: 2px solid var(--neon-green); padding: 15px; }
-        
-        .header-grid { display: grid; grid-template-columns: 1fr auto; border-bottom: 2px solid var(--neon-green); padding-bottom: 10px; margin-bottom: 20px; }
-        .round-badge { border: 1px solid var(--neon-green); padding: 5px 15px; background: var(--dark-green); font-weight: bold; font-size: 1.2em; }
-        
         .label { color: var(--warning-amber); font-size: 0.85em; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
         .data-section { border: 1px solid var(--dark-green); padding: 12px; margin-bottom: 15px; background: rgba(0, 59, 0, 0.1); }
-        
-        h2 { margin: 5px 0; color: #fff; text-transform: uppercase; letter-spacing: 2px; }
-        
-        /* The Messaging Tools */
         .node-selector { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 5px; margin: 10px 0; }
         .node-btn { border: 1px solid var(--neon-green); color: var(--neon-green); background: transparent; padding: 5px; cursor: pointer; font-size: 0.7em; }
         .node-btn.selected { background: var(--neon-green); color: black; font-weight: bold; }
-        
         textarea { width: 100%; background: #111; color: #fff; border: 1px solid var(--dark-green); padding: 10px; font-family: monospace; resize: none; box-sizing: border-box; }
         .action-btn { width: 100%; background: var(--neon-green); color: black; border: none; padding: 12px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 10px; }
-        
-        #inbox-display { color: #fff; font-style: italic; border-left: 3px solid var(--warning-amber); padding-left: 10px; min-height: 40px; }
-        #motive-list { color: #fff; padding-left: 20px; font-size: 0.9em; }
+        #inbox-list { list-style: none; padding: 0; font-size: 0.85em; color: #fff; max-height: 150px; overflow-y: auto; }
+        #inbox-list li { border-bottom: 1px solid var(--dark-green); padding: 8px 0; }
     </style>
 </head>
 <body>
 
 <div id="hud-container">
-    <div class="header-grid">
-        <div>
-            <div class="label">System Status // RD: <span id="round-num">--</span></div>
-            <div id="system-status">ESTABLISHING...</div>
-        </div>
-        <div class="round-badge">PATH: <span id="scenario-id">--</span></div>
-    </div>
-
     <div class="data-section">
-        <div class="label">Node Identity</div>
-        <h2 id="player-role">--</h2>
-        <div id="player-bio" style="font-size: 0.8em; color: #999;"></div>
+        <div class="label">System Status // <span id="player-role">--</span></div>
+        <div id="system-status">CONNECTING TO BUCKET...</div>
     </div>
 
     <div class="data-section" style="border-color: var(--warning-amber);">
-        <div class="label" style="color: var(--warning-amber);">Relay Traffic</div>
-        <div id="inbox-display">...</div>
+        <div class="label" style="color: var(--warning-amber);">Shared Ledger // Decrypted For Your Node</div>
+        <ul id="inbox-list"><li>Scanning archive...</li></ul>
     </div>
 
     <div class="data-section">
-        <div class="label">Objectives</div>
-        <ul id="motive-list"></ul>
-    </div>
-
-    <div class="data-section">
-        <div class="label">Outbound Transmission</div>
+        <div class="label">Outgoing Relay // Shoot to Bucket</div>
         <div class="node-selector" id="target-grid"></div>
-        <textarea id="msg-input" rows="2" placeholder="Input data..."></textarea>
-        <button class="action-btn" onclick="executeRelay()">Execute Transmission</button>
-    </div>
-
-    <div class="data-section">
-        <div class="label">Local Packet Sync</div>
-        <input type="file" id="file-selector" multiple style="display:none;" onchange="syncFiles(event)">
-        <button class="action-btn" style="background: #222; color: var(--neon-green); border: 1px solid var(--neon-green);" onclick="document.getElementById('file-selector').click()">
-            Sync Hand-Off Folder
-        </button>
-        <div id="local-sync-results" style="font-size: 0.8em; color: #fff; margin-top:10px;"></div>
+        <textarea id="msg-input" rows="2" placeholder="Input transmission..."></textarea>
+        <button class="action-btn" onclick="shootToBucket()">Execute Transmission</button>
     </div>
 </div>
 
 <script>
     const params = new URLSearchParams(window.location.search);
     const myNodeID = params.get('node') || "01";
+    const BUCKET_URL = "PASTE_YOUR_GOOGLE_WEB_APP_URL_HERE"; 
     let selectedNodes = [];
 
-    // Target Grid Init
+    // Init Target Grid
     const grid = document.getElementById('target-grid');
     for (let i = 1; i <= 15; i++) {
         let id = i.toString().padStart(2, '0');
@@ -95,56 +63,52 @@
 
     async function updateHUD() {
         try {
-            const res = await fetch(`./manifest.json?t=${new Date().getTime()}`);
-            const data = await res.json();
-            const round = data.current_live_round;
-            const scenario = data.active_scenario;
-            const nodeName = data.assignments[myNodeID][0];
-            const activeData = data.round_schedule[round][nodeName][scenario];
+            // Pull from Manifest for Role/Bio
+            const resMan = await fetch(`./manifest.json?t=${new Date().getTime()}`);
+            const manData = await resMan.json();
+            document.getElementById('player-role').innerText = manData.assignments[myNodeID][0];
 
-            document.getElementById('round-num').innerText = round;
-            document.getElementById('scenario-id').innerText = scenario.split('_')[1].toUpperCase();
-            document.getElementById('player-role').innerText = nodeName.replace('NODE_', '');
-            document.getElementById('player-bio').innerText = data.library[nodeName].bio;
-            document.getElementById('system-status').innerText = `${data.system_status} // ID_${myNodeID}`;
+            // Pull from Google Bucket for Messages
+            const resBucket = await fetch(BUCKET_URL);
+            const bucketData = await resBucket.json();
+            const inbox = document.getElementById('inbox-list');
+            
+            let foundMail = "";
+            // Reverse loop to show newest first. Skip row 0 (headers).
+            for(let i = bucketData.length - 1; i > 0; i--) {
+                let [time, src, targets, msg] = bucketData[i];
+                if (targets.includes(myNodeID)) {
+                    foundMail += `<li><span style="color:var(--warning-amber)">[FROM_${src}]</span> ${msg}</li>`;
+                }
+            }
+            inbox.innerHTML = foundMail || "<li>No decrypted data found.</li>";
+            document.getElementById('system-status').innerText = "BUCKET_SYNC_OK";
 
-            document.getElementById('inbox-display').innerText = activeData.mail;
-
-            let mHTML = "";
-            activeData.motives.forEach(m => { mHTML += `<li>${m}</li>`; });
-            document.getElementById('motive-list').innerHTML = mHTML;
-
-        } catch (e) { document.getElementById('system-status').innerText = "PATH_ERROR"; }
+        } catch (e) { document.getElementById('system-status').innerText = "BUCKET_OFFLINE"; }
     }
 
-    function executeRelay() {
+    async function shootToBucket() {
         const msg = document.getElementById('msg-input').value;
         if (selectedNodes.length === 0 || !msg) return;
-        const packet = `SOURCE: ${myNodeID} TARGETS: ${selectedNodes.join(', ')} | MSG: ${msg}`;
-        const blob = new Blob([packet], { type: 'text/plain' });
-        const link = document.createElement('a');
-        link.href = window.URL.createObjectURL(blob);
-        link.download = `RELAY_${myNodeID}.txt`;
-        link.click();
-        document.getElementById('msg-input').value = "";
-    }
 
-    function syncFiles(event) {
-        const files = event.target.files;
-        const results = document.getElementById('local-sync-results');
-        Array.from(files).forEach(file => {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                if (e.target.result.includes(`NODE_${myNodeID}`)) {
-                    results.innerHTML = `<div style="border-bottom:1px solid #333; padding:5px;">[DECRYPTED] ${e.target.result}</div>` + results.innerHTML;
-                }
-            };
-            reader.readAsText(file);
-        });
+        const payload = { source: myNodeID, targets: selectedNodes.join(','), msg: msg };
+
+        try {
+            await fetch(BUCKET_URL, {
+                method: 'POST',
+                mode: 'no-cors', // Needed for Google Apps Script redirects
+                body: JSON.stringify(payload)
+            });
+            document.getElementById('msg-input').value = "";
+            selectedNodes = [];
+            document.querySelectorAll('.node-btn').forEach(b => b.classList.remove('selected'));
+            alert("TRANSMISSION SHOT");
+            setTimeout(updateHUD, 2000); // Pulse again to show the sent message
+        } catch (e) { alert("SHOT_FAILED"); }
     }
 
     updateHUD();
-    setInterval(updateHUD, 10000);
+    setInterval(updateHUD, 15000); // Check bucket every 15s
 </script>
 </body>
 </html>
