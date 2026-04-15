@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EXCALIBUR // HUD v1.28</title>
+    <title>EXCALIBUR // HUD v1.29</title>
     <style>
         :root { --neon-green: #00ff41; --dark-green: #003b00; --warning-amber: #ffb000; --terminal-black: #050505; }
         * { box-sizing: border-box; }
@@ -13,9 +13,10 @@
         .node-id { font-size: 0.8em; color: #fff; }
         .round-badge { border: 1px solid var(--neon-green); padding: 2px 10px; background: var(--dark-green); font-weight: bold; }
 
-        /* IMAGE PORT: Placeholder for your future assets */
-        .portrait-frame { width: 100%; height: 120px; border: 1px solid var(--dark-green); margin-bottom: 10px; display: flex; align-items: center; justify-content: center; background: #000; overflow: hidden; }
-        #char-portrait { max-width: 100%; max-height: 100%; opacity: 0.7; }
+        /* IMAGE PORT: Optimized for Root 400x400 PNGs */
+        .portrait-frame { width: 100%; height: 200px; border: 1px solid var(--dark-green); margin-bottom: 10px; display: flex; align-items: center; justify-content: center; background: #000; overflow: hidden; position: relative; }
+        #char-portrait { max-width: 100%; max-height: 100%; object-fit: contain; image-rendering: pixelated; }
+        .frame-label { position: absolute; bottom: 5px; right: 5px; font-size: 0.5em; color: var(--dark-green); }
 
         /* OBJECTIVES PANEL */
         .objective-panel { border: 1px solid var(--warning-amber); padding: 10px; margin-bottom: 10px; background: rgba(255, 176, 0, 0.05); }
@@ -49,6 +50,7 @@
 
 <div class="portrait-frame">
     <img id="char-portrait" src="" alt="[ IDENTITY_PORT_PENDING ]">
+    <div class="frame-label">BIO_SCAN_v1.29</div>
 </div>
 
 <div class="objective-panel">
@@ -88,7 +90,6 @@
     const myNodeID = params.get('node') || "01";
     let selectedNodes = [];
 
-    // Grid Init
     const g = document.getElementById('grid');
     for (let i = 1; i <= 15; i++) {
         let id = i.toString().padStart(2, '0');
@@ -124,13 +125,15 @@
             const myInfo = manData.assignments[myNodeID][0];
             const roundData = manData.round_schedule[rd][myInfo]["scenario_A"];
 
-            // Identity & Future Image Mapping
             document.getElementById('node-label').innerText = myInfo.replace('NODE_', '');
             document.getElementById('bio-display').innerText = manData.library[myInfo].bio;
             document.getElementById('mail-display').innerText = roundData.mail;
             
-            // Looking for image matching node ID: e.g. "node_01.png"
-            document.getElementById('char-portrait').src = `assets/node_${myNodeID}.png`;
+            // --- ROOT IMAGE LOGIC ---
+            const portrait = document.getElementById('char-portrait');
+            const imgFile = `node_${myNodeID}.png`;
+            portrait.src = imgFile;
+            portrait.onerror = () => { console.log("Failed to load root asset: " + imgFile); };
 
             let objHtml = "";
             roundData.motives.forEach(m => objHtml += `<li>${m}</li>`);
@@ -142,7 +145,7 @@
                 else if (p.from === myNodeID) inHtml += `<li style="color:#666">[S_${p.to}] ${p.msg}</li>`;
             });
             document.getElementById('inbox-list').innerHTML = inHtml || "<li>Signal Dead.</li>";
-        } catch(e) {}
+        } catch(e) { console.error("SYNC_ERROR", e); }
     }
 
     async function shoot() {
@@ -169,4 +172,3 @@
 </script>
 </body>
 </html>
-
