@@ -3,47 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EXCALIBUR // HUD v1.14</title>
+    <title>EXCALIBUR // HUD v1.16</title>
     <style>
         :root { --neon-green: #00ff41; --dark-green: #003b00; --warning-amber: #ffb000; --terminal-black: #050505; }
         body { background: var(--terminal-black); color: var(--neon-green); font-family: 'Courier New', monospace; padding: 15px; }
         #hud-container { max-width: 650px; margin: 0 auto; border: 2px solid var(--neon-green); padding: 15px; }
-        .label { color: var(--warning-amber); font-size: 0.85em; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
-        .data-section { border: 1px solid var(--dark-green); padding: 12px; margin-bottom: 15px; background: rgba(0, 59, 0, 0.1); }
+        .label { color: var(--warning-amber); font-size: 0.85em; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; letter-spacing: 2px; }
+        .data-section { border: 2px solid var(--dark-green); padding: 12px; margin-bottom: 15px; background: rgba(0, 59, 0, 0.1); }
         .node-selector { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 5px; margin: 10px 0; }
-        .node-btn { border: 1px solid var(--neon-green); color: var(--neon-green); background: transparent; padding: 5px; cursor: pointer; font-size: 0.7em; }
-        .node-btn.selected { background: var(--neon-green); color: black; font-weight: bold; }
+        .node-btn { border: 1px solid var(--neon-green); color: var(--neon-green); background: transparent; padding: 5px; cursor: pointer; font-size: 0.75em; font-weight: bold; }
+        .node-btn.selected { background: var(--neon-green); color: black; }
         textarea { width: 100%; background: #111; color: #fff; border: 1px solid var(--dark-green); padding: 10px; font-family: monospace; resize: none; box-sizing: border-box; }
-        .action-btn { width: 100%; background: var(--neon-green); color: black; border: none; padding: 12px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 10px; }
-        #inbox-list { list-style: none; padding: 0; font-size: 0.85em; color: #fff; max-height: 150px; overflow-y: auto; }
+        .action-btn { width: 100%; background: var(--neon-green); color: black; border: none; padding: 12px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 10px; font-size: 1.1em; letter-spacing: 3px; }
+        #inbox-list { list-style: none; padding: 0; font-size: 0.85em; color: #fff; }
         #inbox-list li { border-bottom: 1px solid var(--dark-green); padding: 8px 0; }
+        .glitch-text { color: var(--warning-amber); font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div id="hud-container">
     <div class="data-section">
-        <div class="label">System Status // <span id="player-role">--</span></div>
-        <div id="system-status">CONNECTING TO BUCKET...</div>
+        <div class="label">Nodal Frequency // <span id="player-role">--</span></div>
+        <div id="system-status">HANDSHAKE_ACTIVE</div>
     </div>
 
     <div class="data-section" style="border-color: var(--warning-amber);">
-        <div class="label" style="color: var(--warning-amber);">Shared Ledger // Decrypted For Your Node</div>
-        <ul id="inbox-list"><li>Scanning archive...</li></ul>
+        <div class="label" style="color: var(--warning-amber);">DECRYPT THE PACKET // THE CLAP</div>
+        <button class="action-btn" style="background:var(--dark-green); color:var(--neon-green); border:1px solid var(--neon-green); margin-bottom:10px;" onclick="clapSignal()">
+            [ CLAP DOWN SIGNAL ]
+        </button>
+        <ul id="inbox-list"><li>Awaiting valid Clap...</li></ul>
     </div>
 
     <div class="data-section">
-        <div class="label">Outgoing Relay // Shoot to Bucket</div>
+        <div class="label">CAPTURE PACKET // THE CLIP</div>
         <div class="node-selector" id="target-grid"></div>
-        <textarea id="msg-input" rows="2" placeholder="Input transmission..."></textarea>
-        <button class="action-btn" onclick="shootToBucket()">Execute Transmission</button>
+        <textarea id="msg-input" rows="2" placeholder="Input static message..."></textarea>
+        <button class="action-btn" onclick="clipSignal()">
+            [ CLIP OUT SIGNAL ]
+        </button>
     </div>
 </div>
 
 <script>
     const params = new URLSearchParams(window.location.search);
     const myNodeID = params.get('node') || "01";
-    const BUCKET_URL = "PASTE_YOUR_GOOGLE_WEB_APP_URL_HERE"; 
     let selectedNodes = [];
 
     // Init Target Grid
@@ -61,54 +66,60 @@
         grid.appendChild(btn);
     }
 
-    async function updateHUD() {
-        try {
-            // Pull from Manifest for Role/Bio
-            const resMan = await fetch(`./manifest.json?t=${new Date().getTime()}`);
-            const manData = await resMan.json();
-            document.getElementById('player-role').innerText = manData.assignments[myNodeID][0];
-
-            // Pull from Google Bucket for Messages
-            const resBucket = await fetch(BUCKET_URL);
-            const bucketData = await resBucket.json();
-            const inbox = document.getElementById('inbox-list');
-            
-            let foundMail = "";
-            // Reverse loop to show newest first. Skip row 0 (headers).
-            for(let i = bucketData.length - 1; i > 0; i--) {
-                let [time, src, targets, msg] = bucketData[i];
-                if (targets.includes(myNodeID)) {
-                    foundMail += `<li><span style="color:var(--warning-amber)">[FROM_${src}]</span> ${msg}</li>`;
-                }
-            }
-            inbox.innerHTML = foundMail || "<li>No decrypted data found.</li>";
-            document.getElementById('system-status').innerText = "BUCKET_SYNC_OK";
-
-        } catch (e) { document.getElementById('system-status').innerText = "BUCKET_OFFLINE"; }
-    }
-
-    async function shootToBucket() {
+    // THE CLIP (Sending logic)
+    async function clipSignal() {
         const msg = document.getElementById('msg-input').value;
         if (selectedNodes.length === 0 || !msg) return;
 
-        const payload = { source: myNodeID, targets: selectedNodes.join(','), msg: msg };
-
+        // Data Structure for the Clip
+        const packet = `[[CLIP_RELAY_ID:${myNodeID}|DEST:${selectedNodes.join(',')}|STATIC:${msg}]]`;
+        
         try {
-            await fetch(BUCKET_URL, {
-                method: 'POST',
-                mode: 'no-cors', // Needed for Google Apps Script redirects
-                body: JSON.stringify(payload)
-            });
+            await navigator.clipboard.writeText(packet);
+            alert("SIGNAL CLIPPED TO VOID. DROP IT IN THE RELAY.");
             document.getElementById('msg-input').value = "";
             selectedNodes = [];
             document.querySelectorAll('.node-btn').forEach(b => b.classList.remove('selected'));
-            alert("TRANSMISSION SHOT");
-            setTimeout(updateHUD, 2000); // Pulse again to show the sent message
-        } catch (e) { alert("SHOT_FAILED"); }
+        } catch (err) {
+            alert("CLIP FAILED. MANUAL SNIP REQUIRED.");
+        }
     }
 
-    updateHUD();
-    setInterval(updateHUD, 15000); // Check bucket every 15s
+    // THE CLAP (Receiving logic)
+    async function clapSignal() {
+        try {
+            const text = await navigator.clipboard.readText();
+            if (!text.includes("[[CLIP_RELAY_ID:")) {
+                alert("NO CLIPPED SIGNAL DETECTED.");
+                return;
+            }
+
+            const source = text.split("ID:")[1].split("|")[0];
+            const targets = text.split("DEST:")[1].split("|")[0];
+            const msg = text.split("STATIC:")[1].split("]]")[0];
+
+            if (targets.includes(myNodeID)) {
+                const li = document.createElement('li');
+                li.innerHTML = `<span class="glitch-text">[RECOVERED_FROM_NODE_${source}]</span><br>${msg}`;
+                const list = document.getElementById('inbox-list');
+                if (list.innerText.includes("Awaiting")) list.innerHTML = "";
+                list.prepend(li);
+            } else {
+                alert("SIGNAL CLAPPED BUT NOT FOR THIS NODE. NOISE DISCARDED.");
+            }
+        } catch (err) {
+            alert("TERMINAL REFUSED HANDSHAKE (ALLOW CLIPBOARD).");
+        }
+    }
+
+    async function init() {
+        try {
+            const res = await fetch(`./manifest.json?t=${new Date().getTime()}`);
+            const data = await res.json();
+            document.getElementById('player-role').innerText = data.assignments[myNodeID][0];
+        } catch(e) { document.getElementById('player-role').innerText = "NODE_ERR"; }
+    }
+    init();
 </script>
 </body>
 </html>
