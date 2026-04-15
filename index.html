@@ -3,58 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EXCALIBUR // HUD v1.09</title>
+    <title>EXCALIBUR // HUD v1.10</title>
     <style>
         :root { --neon-green: #00ff41; --dark-green: #003b00; --warning-amber: #ffb000; --terminal-black: #050505; --heat-red: #ff4444; }
         body { background: var(--terminal-black); color: var(--neon-green); font-family: 'Courier New', monospace; padding: 15px; }
-        #hud-container { max-width: 650px; margin: 0 auto; border: 2px solid var(--neon-green); padding: 15px; box-shadow: 0 0 15px rgba(0,255,65,0.2); }
-        .header-grid { display: grid; grid-template-columns: 1fr auto; border-bottom: 2px solid var(--neon-green); padding-bottom: 10px; margin-bottom: 20px; }
-        .round-badge { border: 1px solid var(--neon-green); padding: 5px 15px; background: var(--dark-green); font-weight: bold; font-size: 1.2em; }
+        #hud-container { max-width: 650px; margin: 0 auto; border: 2px solid var(--neon-green); padding: 15px; }
         .label { color: var(--warning-amber); font-size: 0.85em; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
         .data-section { border: 1px solid var(--dark-green); padding: 12px; margin-bottom: 15px; background: rgba(0, 59, 0, 0.1); }
-        h2 { margin: 5px 0; color: #fff; text-transform: uppercase; letter-spacing: 2px; }
-        #motive-list { color: #fff; padding-left: 20px; }
-        .action-btn { width: 100%; background: var(--neon-green); color: black; border: none; padding: 12px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 10px; }
-        #inbox-display { color: #fff; font-style: italic; border-left: 3px solid var(--warning-amber); padding-left: 10px; min-height: 30px; }
+        h2 { margin: 5px 0; color: #fff; text-transform: uppercase; }
+        #inbox-display { color: #fff; font-style: italic; border-left: 3px solid var(--warning-amber); padding-left: 10px; }
     </style>
 </head>
 <body>
-
 <div id="hud-container">
-    <div class="header-grid">
-        <div>
-            <div class="label">Archive Connection</div>
-            <div id="system-status">SYNCING...</div>
-        </div>
-        <div class="round-badge">RD: <span id="round-num">--</span></div>
-    </div>
-
     <div class="data-section">
-        <div class="label">Node Identity</div>
+        <div class="label">System Status // RD: <span id="round-num">--</span></div>
+        <div id="system-status">SYNCING_PATHWAY...</div>
+    </div>
+    <div class="data-section">
+        <div class="label">Identity</div>
         <h2 id="player-role">--</h2>
-        <div id="player-bio" style="font-size: 0.8em; color: #999;"></div>
     </div>
-
-    <div class="data-section" style="border-color: var(--warning-amber);">
-        <div class="label" style="color: var(--warning-amber);">Incoming Relay (Round Specific)</div>
-        <div id="inbox-display">Scanning for data packets...</div>
-    </div>
-
     <div class="data-section">
-        <div class="label">Active Motives</div>
-        <ul id="motive-list"></ul>
+        <div class="label">Active Relay // Scenario <span id="scenario-id">--</span></div>
+        <div id="inbox-display">...</div>
     </div>
-
     <div class="data-section">
-        <div class="label">Nodal Gear Relay (Local Sync)</div>
-        <input type="file" id="file-selector" multiple style="display:none;" onchange="syncFiles(event)">
-        <button class="action-btn" onclick="document.getElementById('file-selector').click()">Sync Hand-Off Packets</button>
-        <div id="local-sync-results" style="font-size: 0.8em; margin-top: 10px; color: #fff;"></div>
-    </div>
-
-    <div id="quest-ledger" style="display:none; border: 2px dashed var(--heat-red); padding: 10px; color: var(--heat-red);">
-        <div class="label" style="color: var(--heat-red);">!! THE RESTORED CHRONICLE !!</div>
-        <div id="quest-list"></div>
+        <div class="label">Current Objectives</div>
+        <ul id="motive-list" style="color:#fff;"></ul>
     </div>
 </div>
 
@@ -62,56 +38,40 @@
     const params = new URLSearchParams(window.location.search);
     const myNodeID = params.get('node') || "01";
 
+    function scramble(text, pool) {
+        if (!text || !pool) return text;
+        let result = text;
+        const roll = (arr) => arr[Math.floor(Math.random() * arr.length)];
+        while (result.includes("[ADJ]")) result = result.replace("[ADJ]", roll(pool.adjectives));
+        while (result.includes("[NOUN]")) result = result.replace("[NOUN]", roll(pool.nouns));
+        return result;
+    }
+
     async function updateHUD() {
         try {
             const res = await fetch(`./manifest.json?t=${new Date().getTime()}`);
             const data = await res.json();
             const round = data.current_live_round;
+            const scenario = data.active_scenario;
             const nodeName = data.assignments[myNodeID][0];
-            const schedule = data.round_schedule[round][nodeName];
+            
+            // Access the Variable Path
+            const activeData = data.round_schedule[round][nodeName][scenario];
 
-            // 1. Core Info
             document.getElementById('round-num').innerText = round;
+            document.getElementById('scenario-id').innerText = scenario.split('_')[1];
             document.getElementById('player-role').innerText = nodeName.replace('NODE_', '');
-            document.getElementById('player-bio').innerText = data.library[nodeName].bio;
-            document.getElementById('system-status').innerText = `${data.system_status} // NODE_${myNodeID}`;
+            document.getElementById('system-status').innerText = `${data.system_status} // ID_${myNodeID}`;
 
-            // 2. Automated Round Mail
-            document.getElementById('inbox-display').innerText = schedule.incoming_mail || "No automated relays for this sector.";
+            // Process Scramble Logic
+            document.getElementById('inbox-display').innerText = scramble(activeData.mail, data.glitch_pool);
 
-            // 3. Motives
             let mHTML = "";
-            schedule.motives.forEach(m => { mHTML += `<li>${m}</li>`; });
+            activeData.motives.forEach(m => { mHTML += `<li>${scramble(m, data.glitch_pool)}</li>`; });
             document.getElementById('motive-list').innerHTML = mHTML;
 
-            // 4. Ledger
-            const ledger = document.getElementById('quest-ledger');
-            if (data.ledger_visibility === "VISIBLE") {
-                ledger.style.display = "block";
-                let qHTML = "<ul>";
-                for (let n in data.round_schedule[round]) {
-                    qHTML += `<li><strong>${n.replace('NODE_', '')}:</strong> ${data.round_schedule[round][n].motives[0]}</li>`;
-                }
-                document.getElementById('quest-list').innerHTML = qHTML + "</ul>";
-            } else { ledger.style.display = "none"; }
-
-        } catch (e) { document.getElementById('system-status').innerText = "ARCHIVE_SYNC_OFFLINE"; }
+        } catch (e) { document.getElementById('system-status').innerText = "PATHWAY_ERROR"; }
     }
-
-    function syncFiles(event) {
-        const files = event.target.files;
-        const results = document.getElementById('local-sync-results');
-        Array.from(files).forEach(file => {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                if (e.target.result.includes(`NODE_${myNodeID}`)) {
-                    results.innerHTML += `<div style="border-bottom:1px solid #333; padding:5px;">[SYNC_OK] ${file.name} Decrypted.</div>`;
-                }
-            };
-            reader.readAsText(file);
-        });
-    }
-
     updateHUD();
     setInterval(updateHUD, 10000);
 </script>
