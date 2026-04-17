@@ -3,225 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TRUMPET GARDEN v2.60 HAMMER-BANSHEE</title>
+    <title>CRi1 EXCALIBUR v1.5.2 // AGENCY_LOCK</title>
     <style>
-        :root { --p: #9d00ff; --o: #FF4500; --g: #0f0; --y: #ffcc00; }
-        body { margin: 0; background: #000; color: #fff; font-family: 'Courier New', monospace; overflow: hidden; touch-action: none; width: 100vw; height: 100vh; transition: filter 0.1s; }
-        .fae { filter: invert(1) hue-rotate(180deg); background: #fff !important; }
-        #gate { position: fixed; inset: 0; background: #000; z-index: 2000; display: flex; justify-content: center; align-items: center; }
-        #ui { position: absolute; inset: 0; z-index: 100; display: none; background: #000; }
-        #header { position: absolute; top: 0; width: 100%; height: 110px; background: #111 !important; border-bottom: 2px solid #333; z-index: 1500; }
-        .nav-container { display: flex; align-items: center; justify-content: space-around; height: 80px; }
-        .btn { background: #222; border: 2px solid var(--p); color: #fff !important; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 10px; text-align: center; height: 35px; width: 65px; }
-        .mini-btn { width: 42px; height: 42px; border-radius: 50%; background: #222; border: 2px solid #fff; color: #fff !important; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; }
-        .col-btn { display: flex; flex-direction: column; gap: 3px; }
-        .mini-label { font-size: 8px; width: 50px; height: 18px; }
-        #diag { width: 100%; text-align: center; font-size: 10px; color: var(--g); font-weight: bold; }
-        .ham { position: absolute; top: 125px; padding: 8px 15px; font-size: 10px; border: 2px solid var(--y); color: var(--y); background: #000; border-radius: 4px; z-index: 1000; cursor: pointer; }
-        .sld { position: absolute; width: 40px; height: 150px; background: #111; border: 2px solid #555; border-radius: 20px; top: 200px; z-index: 300; }
-        #l-s { left: 4%; } #r-s { right: 4%; }
-        .fill { width: 100%; position: absolute; bottom: 0; background: linear-gradient(to top, var(--o), #fff); border-radius: 20px; pointer-events: none; }
-        .pad-grid { position: absolute; bottom: 10px; width: 40%; height: auto; z-index: 400; cursor: pointer; }
-        #pad-left { left: 8%; } #pad-right { right: 8%; }
-        #osc { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
+        :root { --bg: #000; --taco: #FFD200; --active: #FFFF00; --node: #40E0D0; }
+        body, html { margin: 0; background: var(--bg); font-family: 'Courier New', monospace; color: #fff; height: 100%; overflow: hidden; }
+        header { background: var(--taco); color: #000; padding: 10px; font-weight: 900; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #444; }
+        #viewport { padding: 15px; height: calc(100% - 290px); overflow-y: auto; }
+        .character-name { font-size: 24px; color: var(--active); text-transform: uppercase; margin-bottom: 2px; }
+        .metadata { font-size: 10px; color: #666; display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid #222; padding-bottom: 8px; margin-bottom: 12px; }
+        .stage-box { background: rgba(255, 210, 0, 0.05); border-left: 4px solid var(--node); padding: 12px; line-height: 1.4; }
+        .label-tag { font-size: 9px; color: #555; text-transform: uppercase; margin-bottom: 4px; }
+        #brass { position: fixed; bottom: 0; width: 100%; height: 210px; background: #080808; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 10px; box-sizing: border-box; border-top: 4px solid #222; }
+        .node-btn { background: #151515; border: none; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: inset -2px -2px 0px #000, inset 1px 1px 0px #333; }
+        .node-btn.active { background: var(--node); color: #000; box-shadow: inset 2px 2px 0px #000; }
+        #entangle { grid-column: span 5; background: #900; color: #fff; text-align: center; padding: 12px; font-weight: 900; border: 2px solid #f00; margin-top: 5px; }
+        #flash { position: fixed; top: 0; width: 100%; height: 100%; background: #fff; display: none; z-index: 1000; opacity: 0.5; }
+        .fae { filter: hue-rotate(180deg) invert(100%); }
     </style>
 </head>
-<body>
-<div id="gate"><button id="b-mic" class="btn" style="font-size: 18px; width:200px; height:60px;">IGNITE v2.60</button></div>
-<div id="ui">
-    <div id="header">
-        <div id="rec-progress" style="position:absolute; bottom:0; left:0; height:3px; background:var(--g); width:0%;"></div>
-        <div class="nav-container">
-            <div style="display:flex; align-items:center; gap:6px;">
-                <button id="b-rec" class="mini-btn">🐝</button>
-                <div class="col-btn">
-                    <button id="p-rec-play" class="btn mini-label" style="border-color:var(--y); color:var(--y);">PLAY</button>
-                    <button id="s-rec-stop" class="btn mini-label" style="border-color:var(--y); color:var(--y);">STOP</button>
-                </div>
-            </div>
-            <div style="display:flex; align-items:center; gap:6px;">
-                <button id="p-lock" class="btn" onclick="toggleLock()">LOCK</button>
-                <button id="b-save" class="btn" style="border-color:#44aaff; color:#44aaff;">SAVE</button>
-                <button id="b-glitch" class="btn" style="border-color:#ff4444; color:#ff4444;">GLITCH</button>
-            </div>
-            <div style="display:flex; align-items:center; gap:6px;">
-                <div class="col-btn">
-                    <button id="p-file-play" class="btn mini-label">PLAY</button>
-                    <button id="s-file-stop" class="btn mini-label">STOP</button>
-                </div>
-                <button id="b-file" class="mini-btn">📂</button>
-            </div>
+<body id="main">
+    <div id="flash"></div>
+    <header>
+        <div>EXCALIBUR v1.5.2</div>
+        <div style="font-size: 10px; font-family: serif;">[p#.##] : // : \\ ; @ !</div>
+        <button onclick="toggleFae()" style="background:#000; color:var(--taco); border:1px solid #000; font-size:10px; padding:4px 8px;">FAE</button>
+    </header>
+
+    <div id="viewport">
+        <div id="node-name" class="character-name">SYNC_STANDBY</div>
+        <div class="metadata">
+            <div id="node-hex">HEX: ----</div>
+            <div id="node-freq">FREQ: ----</div>
+            <div id="node-phase" style="grid-column: span 2;">PHASE: NO_SIGNAL</div>
         </div>
-        <div id="diag">STATUS: v2.60 HAMMER ACTIVE</div>
-        <input type="file" id="f-in" hidden accept="audio/*">
+        <div class="stage-box">
+            <div class="label-tag">Performance Goal</div>
+            <div id="node-hook" style="margin-bottom: 15px;">Engage the Brass Switchboard.</div>
+            <div class="label-tag">Crazy Story (8yr Simple)</div>
+            <div id="node-story" style="color:var(--active);">---</div>
+        </div>
     </div>
 
-    <button id="h-left" class="ham" style="left: 8%;">OCTAVE -</button>
-    <button id="h-right" class="ham" style="right: 8%;">OCTAVE +</button>
-
-    <div id="l-s" class="sld" onpointerdown="slide(event,'l')" onpointermove="slide(event,'l')"><div id="l-f" class="fill" style="height:50%"></div></div>
-    <div id="r-s" class="sld" onpointerdown="slide(event,'r')" onpointermove="slide(event,'r')"><div id="r-f" class="fill" style="height:50%"></div></div>
-
-    <svg id="pad-left" class="pad-grid" viewBox="0 0 220 230">
-        <g stroke="#fff" stroke-width="2.5" fill="none" pointer-events="all">
-            <circle cx="40" cy="40" r="22" onpointerdown="pulse(1.0)"/><circle cx="110" cy="40" r="22" onpointerdown="pulse(1.1)"/><circle cx="180" cy="40" r="22" onpointerdown="pulse(1.2)"/>
-            <circle cx="40" cy="110" r="22" onpointerdown="pulse(0.8)"/><circle cx="110" cy="110" r="22" onpointerdown="pulse(0.9)"/><circle cx="180" cy="110" r="22" onpointerdown="pulse(1.0)"/>
-            <circle cx="40" cy="180" r="22" onpointerdown="pulse(0.6)"/><circle cx="110" cy="180" r="22" onpointerdown="pulse(0.7)"/><circle cx="180" cy="180" r="22" onpointerdown="pulse(0.8)"/>
-        </g>
-    </svg>
-
-    <svg id="pad-right" class="pad-grid" viewBox="0 0 220 230">
-        <g stroke="#fff" stroke-width="2.5" fill="none" pointer-events="all">
-            <circle cx="40" cy="40" r="22" onpointerdown="pulse(1.2)"/><circle cx="110" cy="40" r="22" onpointerdown="pulse(1.1)"/><circle cx="180" cy="40" r="22" onpointerdown="pulse(1.0)"/>
-            <circle cx="40" cy="110" r="22" onpointerdown="pulse(1.0)"/><circle cx="110" cy="110" r="22" onpointerdown="pulse(0.9)"/><circle cx="180" cy="110" r="22" onpointerdown="pulse(0.8)"/>
-            <circle cx="40" cy="180" r="22" onpointerdown="pulse(0.8)"/><circle cx="110" cy="180" r="22" onpointerdown="pulse(0.7)"/><circle cx="180" cy="180" r="22" onpointerdown="pulse(0.6)"/>
-        </g>
-    </svg>
-</div>
-<canvas id="osc"></canvas>
+    <div id="brass">
+        <div id="grid" style="display: contents;"></div>
+        <button id="entangle" onclick="entangle()">ENTANGLE_RELAY</button>
+    </div>
 
 <script>
-let aCtx, anal, src, rec, chks = [], virtualCache = null, isL = false, isF = false, ints = {l:0.5, r:0.5}, activeSources = [], curPitch = 1.0;
-const cvs = document.getElementById('osc'), ctx = cvs.getContext('2d'), diag = document.getElementById('diag'), prog = document.getElementById('rec-progress');
+    const data = [
+        {id:"01", n:"Marshall", c:"#40E0D0", f:261.6, p:"C-FUNDAMENTAL (STATIC)", h:"Fire is cold.", s:"Metal turned to juice!"},
+        {id:"02", n:"Seer", c:"#FF0000", f:293.7, p:"16Hz RIPPLE // VESSEL", h:"Ears ringing.", s:"Walls are wiggling!"},
+        {id:"03", n:"Old Bed", c:"#0000FF", f:329.6, p:"DEEP ATLANTIC // ANCHOR", h:"Water tastes like pennies.", s:"Three-eyed fish spoke!"},
+        {id:"04", n:"Hammer", c:"#FFFF00", f:349.2, p:"CDE // MINOR THIRD", h:"Iron is brittle.", s:"Nail is a butterfly!"},
+        {id:"05", n:"Farrier", c:"#800080", f:392.0, p:"CDE // PERFECT FIFTH", h:"Bellows empty.", s:"Blue fire singing!"},
+        {id:"06", n:"Echo", c:"#008000", f:440.0, p:"VOICE // PERSISTENT", h:"Hear the voice?", s:"News in the rain!"},
+        {id:"07", n:"Surgeon", c:"#FF4500", f:493.9, p:"INHALE C / EXHALE A#", h:"Heartbeat clock.", s:"Shadow ran away!"},
+        {id:"08", n:"Librarian", c:"#AFEEEE", f:523.3, p:"JUST UNISON (1:1)", h:"Books whispering.", s:"Words fell off!"},
+        {id:"09", n:"Surveyor", c:"#FFD700", f:587.3, p:"GRAVITY SLIDE (B>A)", h:"Creek is moving.", s:"Map changed itself!"},
+        {id:"10", n:"Gambler", c:"#9932CC", f:659.3, p:"9:8 MAJOR SECOND", h:"Squishy dice.", s:"Crying cards!"},
+        {id:"11", n:"Telegraphist", c:"#32CD32", f:698.5, p:"SIGNAL OVERRIDE", h:"Table knocking.", s:"Salt water machine!"},
+        {id:"12", n:"Outlaw", c:"#FFC0CB", f:784.0, p:"AURORA ROSE // STATIC", h:"Static in air?", s:"Dusty gold!"},
+        {id:"13", n:"Drifter", c:"#00CED1", f:880.0, p:"TIME_LOOP // PHASE", h:"Been here before.", s:"Walking in place!"},
+        {id:"14", n:"Proprietor", c:"#6A5ACD", f:932.3, p:"FINITE FLARE", h:"Cold coins.", s:"Baby-face coin!"},
+        {id:"15", n:"Resident", c:"#FFD700", f:987.8, p:"5:4 MAJOR THIRD", h:"Secret book.", s:"Book spoke to me!"}
+    ];
 
-// --- INITIALIZE ---
-document.getElementById('b-mic').onclick = async () => {
-    document.getElementById('gate').style.display = 'none'; 
-    document.getElementById('ui').style.display = 'block';
-    try {
-        aCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        src = aCtx.createMediaStreamSource(stream);
-        anal = aCtx.createAnalyser(); 
-        anal.fftSize = 1024;
-        src.connect(anal); 
-        draw(); 
-    } catch (err) { diag.innerText = "MIC ERROR"; }
-};
+    let audio = null; let fae = false;
+    function init() { if(!audio) audio = new (window.AudioContext || window.webkitAudioContext)(); }
+    function toggleFae() { fae=!fae; document.getElementById('main').classList.toggle('fae'); }
 
-// --- RECORDER ---
-document.getElementById('b-rec').onclick = () => {
-    if (rec && rec.state === "recording") return;
-    chks = []; 
-    rec = new MediaRecorder(src.mediaStream);
-    rec.ondataavailable = e => chks.push(e.data);
-    rec.onstop = () => {
-        const b = new Blob(chks, { type: 'audio/webm' });
-        const r = new FileReader();
-        r.onloadend = () => { virtualCache = r.result; diag.innerText = "v2.60 CACHED"; };
-        r.readAsDataURL(b);
-    };
-    rec.start();
-    let s = Date.now();
-    let i = setInterval(() => {
-        let e = Date.now() - s;
-        prog.style.width = Math.min((e / 3500) * 100, 100) + '%';
-        if (e >= 3500) { clearInterval(i); if(rec.state === "recording") rec.stop(); }
-    }, 50);
-};
-
-// --- FILE LOADING ---
-document.getElementById('b-file').onclick = () => document.getElementById('f-in').click();
-document.getElementById('f-in').onchange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const r = new FileReader(); 
-    r.onload = (re) => { 
-        virtualCache = re.target.result; 
-        diag.innerText = "📂 LOADED: " + file.name.substring(0,12).toUpperCase(); 
-    };
-    r.readAsDataURL(file);
-};
-
-// --- OCTAVE HAM LOGIC ---
-document.getElementById('h-left').onpointerdown = () => { 
-    if(curPitch > 0.25) curPitch -= 0.25; 
-    diag.innerText = "HAMMER PITCH: " + curPitch.toFixed(2); 
-};
-document.getElementById('h-right').onpointerdown = () => { 
-    if(curPitch < 4.0) curPitch += 0.25; 
-    diag.innerText = "HAMMER PITCH: " + curPitch.toFixed(2); 
-};
-
-// --- HAMMER PULSE ENGINE ---
-async function pulse(p) {
-    if (!virtualCache || !aCtx) { diag.innerText = "LOAD DATA FIRST"; return; }
-    if (aCtx.state === 'suspended') await aCtx.resume();
-    
-    try {
-        const res = await fetch(virtualCache);
-        const ab = await res.arrayBuffer();
-        const buffer = await aCtx.decodeAudioData(ab);
-        const s = aCtx.createBufferSource(); 
-        s.buffer = buffer; 
+    function select(n) {
+        init();
+        document.getElementById('node-name').innerText = n.n;
+        document.getElementById('node-hook').innerText = n.h;
+        document.getElementById('node-story').innerText = n.s;
+        document.getElementById('node-hex').innerText = "HEX: " + n.c;
+        document.getElementById('node-freq').innerText = "FREQ: " + n.f + "Hz";
+        document.getElementById('node-phase').innerText = "PHASE: " + n.p;
+        document.documentElement.style.setProperty('--node', n.c);
         
-        // Analog Tactile Feedback: Dynamic Pitch + Hue Rotation Shift
-        let finalRate = p * curPitch;
-        s.playbackRate.value = finalRate;
+        const osc = audio.createOscillator(); const g = audio.createGain();
+        osc.type = fae ? 'sawtooth' : 'sine';
+        osc.frequency.setValueAtTime(fae ? n.f * 0.707 : n.f, audio.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + 0.5);
+        osc.connect(g); g.connect(audio.destination);
+        osc.start(); osc.stop(audio.currentTime + 0.5);
         
-        // HAMMER Visual Feedback
-        document.body.style.filter = `hue-rotate(${finalRate * 90}deg)`;
-        setTimeout(() => { document.body.style.filter = isF ? 'invert(1) hue-rotate(180deg)' : 'none'; }, 150);
-
-        s.connect(anal); 
-        anal.connect(aCtx.destination); 
-        s.start(0);
-        activeSources.push(s); 
-    } catch (e) { diag.innerText = "SYNC ERROR"; }
-}
-
-// --- SLIDERS & TACTILE FEEDBACK ---
-function slide(e, s) {
-    if (isL) return;
-    const r = e.currentTarget.getBoundingClientRect();
-    const y = (e.touches ? e.touches[0].clientY : e.clientY);
-    let v = 1 - (y - r.top) / r.height;
-    ints[s] = Math.max(0, Math.min(1.5, v * 1.5));
-    document.getElementById(s + '-f').style.height = (ints[s] / 1.5) * 100 + "%";
-    
-    // Analog feedback logic for visual glitching
-    if (ints.l > 1.2 || ints.r > 1.2) { 
-        document.body.classList.add('fae'); 
-        isF = true; 
-    } else { 
-        document.body.classList.remove('fae'); 
-        isF = false; 
+        document.querySelectorAll('.node-btn').forEach(b=>b.classList.remove('active'));
+        document.getElementById('btn-'+n.id).classList.add('active');
     }
-}
 
-document.getElementById('p-file-play').onclick = () => pulse(1.0);
-document.getElementById('p-rec-play').onclick = () => pulse(1.0);
-document.getElementById('s-file-stop').onclick = () => stopAll();
-document.getElementById('s-rec-stop').onclick = () => stopAll();
-document.getElementById('b-save').onclick = () => {
-    if(!virtualCache) return;
-    const a = document.createElement('a'); a.href = virtualCache;
-    a.download = `BANSHEE_HAMMER_${Date.now()}.webm`; a.click();
-};
-
-function stopAll() { activeSources.forEach(s => { try { s.stop(); } catch(err) {} }); activeSources = []; }
-function toggleLock() { isL = !isL; document.getElementById('p-lock').innerText = isL ? "LOCKED" : "LOCK"; }
-
-// --- HAMMER OSCILLOSCOPE DRAW ---
-function draw() {
-    requestAnimationFrame(draw); if (!anal) return;
-    cvs.width = window.innerWidth; cvs.height = window.innerHeight;
-    const d = new Uint8Array(anal.frequencyBinCount); 
-    anal.getByteTimeDomainData(d);
-    ctx.clearRect(0, 0, cvs.width, cvs.height); 
-    ctx.lineWidth = 5; 
-    
-    // Dynamic color based on current intensity
-    ctx.strokeStyle = isF ? "#000" : `rgb(0, 255, ${Math.floor(ints.l * 100)})`;
-    
-    ctx.beginPath(); 
-    let sw = cvs.width / d.length;
-    for (let i = 0; i < d.length; i++) {
-        const y = (d[i] / 128.0) * cvs.height / 2;
-        if (i === 0) ctx.moveTo(i * sw, y); else ctx.lineTo(i * sw, y);
+    function entangle() {
+        const f = document.getElementById('flash'); f.style.display='block';
+        setTimeout(()=>f.style.display='none',150);
+        if(navigator.vibrate) navigator.vibrate([100,50,100]);
     }
-    ctx.stroke();
-}
+
+    const shuffled = data.sort(() => Math.random() - 0.5);
+    const container = document.getElementById('grid');
+    shuffled.forEach(n => {
+        const b = document.createElement('div'); b.className='node-btn'; b.id='btn-'+n.id;
+        b.innerHTML = `<span style="font-size:10px;">${n.id}</span><div style="width:12px;height:12px;background:${n.c};border-radius:2px;"></div>`;
+        b.onclick = () => select(n);
+        container.appendChild(b);
+    });
 </script>
 </body>
 </html>
+
